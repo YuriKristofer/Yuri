@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>title</title>
+</head>
+<body>
+    
+</body>
+</html>"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import {
+  Clock,
+  Star,
+  Users,
+  MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  Shield,
+  Menu,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Play,
+  Server,
+  Gamepad2,
+  Zap,
+  Target,
+  Crosshair,
+  Radio,
+  Map,
+  Crown,
+  Gift,
+  Activity,
+  Globe,
+  FileText,
+  UserPlus,
+  DollarSign,
+  Wifi,
+  Signal,
+  Battery,
+  Volume2,
+  VolumeX,
+} from "lucide-react"
+
+interface WhitelistForm {
+  steamId: string
+  discordTag: string
+  age: string
+  experience: string
+  character: string
+  backstory: string
+  rules: boolean
+}
+
+interface ContactForm {
+  name: string
+  email: string
+  subject: string
+  message: string
+}
+
+interface DonationForm {
+  amount: number
+  package: string
+  steamId: string
+  email: string
+  message: string
+}
+
+export default function HaufenDayZServer() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("whitelist")
+  const [serverStatus, setServerStatus] = useState<"online" | "offline" | "restarting">("restarting")
+  const [playerCount, setPlayerCount] = useState(0)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [isVideoMuted, setIsVideoMuted] = useState(true)
+  const [showVideo, setShowVideo] = useState(true)
+
+  // Loading states
+  const [isWhitelistLoading, setIsWhitelistLoading] = useState(false)
+  const [isContactLoading, setIsContactLoading] = useState(false)
+  const [isDonationLoading, setIsDonationLoading] = useState(false)
+
+  // Success/Error states
+  const [whitelistStatus, setWhitelistStatus] = useState<"idle" | "success" | "error">("idle")
+  const [contactStatus, setContactStatus] = useState<"idle" | "success" | "error">("idle")
+  const [donationStatus, setDonationStatus] = useState<"idle" | "success" | "error">("idle")
+
+  // Form states
+  const [whitelistForm, setWhitelistForm] = useState<WhitelistForm>({
+    steamId: "",
+    discordTag: "",
+    age: "",
+    experience: "",
+    character: "",
+    backstory: "",
+    rules: false,
+  })
+
+  const [contactForm, setContactForm] = useState<ContactForm>({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  })
+
+  const [donationForm, setDonationForm] = useState<DonationForm>({
+    amount: 10,
+    package: "",
+    steamId: "",
+    email: "",
+    message: "",
+  })
+
+  // Real DayZ Images for Gallery
+  const galleryImages = [
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/p1_40209163210240.jpg-mGiWBzf3Bb5r3nIstsNxnu9ncqUKSI.jpeg",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cvslzsngntf21.jpg-YRGDVKIDhOJTl51xi9dk0FhHgrv6g2.jpeg",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/survivor-side-profile-dayz-desktop-fwu0zqqkh6mwl0jd.jpg-4etjIrCUeeZz9uhcIPwygDiGAs9ZWW.jpeg",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/oah9kequ9wj91.jpg-lwCpKZ1WXYVbZEtIpsoV5xT9WInzuI.jpeg",
+  ]
+
+  const serverFeatures = [
+    {
+      id: 1,
+      name: "Roleplay Hardcore",
+      icon: "🎭",
+      description: "Sistema de RP rigoroso com personagens únicos e histórias envolventes",
+      details: ["Whitelist obrigatória", "Personagens únicos", "Histórias conectadas"],
+    },
+    {
+      id: 2,
+      name: "Economia Realista",
+      icon: "💰",
+      description: "Sistema econômico balanceado com trading e bases persistentes",
+      details: ["Moeda própria", "Trading entre players", "Bases persistentes"],
+    },
+    {
+      id: 3,
+      name: "Eventos Semanais",
+      icon: "⚡",
+      description: "Eventos únicos organizados pela staff para manter a experiência fresca",
+      details: ["Eventos PvP", "Missões cooperativas", "Histórias dinâmicas"],
+    },
+    {
+      id: 4,
+      name: "Mods Exclusivos",
+      icon: "🔧",
+      description: "Coleção curada de mods para melhorar a experiência de jogo",
+      details: ["Armas realistas", "Veículos únicos", "Construção avançada"],
+    },
+  ]
+
+  const factions = [
+    {
+      id: 1,
+      name: "Consórcio Rurikov",
+      type: "Paramilitar / Corporação Bélica",
+      motivation: "Controle total de recursos e da ordem pública por meio da força",
+      description:
+        "O Consórcio Rurikov é uma organização criada por ex-militares e empresários sobreviventes do colapso mundial. Eles veem a crise como uma oportunidade de estabelecer uma nova ordem: sem política, sem democracia, apenas hierarquia e controle bélico. Cobram taxas por proteção, dominam rotas comerciais e eliminam ameaças sem piedade.",
+      activities: [
+        "Controle de rotas e cidades",
+        "Negociação de armamentos e contratos militares",
+        "Manutenção da 'ordem' pelo medo",
+      ],
+      motto: "Estabilidade não se negocia, se impõe.",
+      color: "bg-red-600",
+      icon: "⚔️",
+    },
+    {
+      id: 2,
+      name: "Filhos do Brejo",
+      type: "Sobrevivencialistas / Culto Naturalista",
+      motivation: "Viver em harmonia com o fim do mundo, longe da tecnologia e da corrupção humana",
+      description:
+        "Os Filhos do Brejo acreditam que o apocalipse foi um reset da humanidade, e que viver na simplicidade é a única forma de redenção. Vivem nos pântanos e florestas, rejeitam a civilização e atacam qualquer um que perturbe seu território. Alguns dizem que praticam rituais antigos e até canibalismo, mas ninguém nunca voltou para confirmar.",
+      activities: [
+        "Defesa territorial em florestas e rios",
+        "Emboscadas e sequestros para 'purificação'",
+        "Proibição de tecnologia em suas terras",
+      ],
+      motto: "O pântano acolhe os puros e engole os tolos.",
+      color: "bg-green-700",
+      icon: "🌿",
+    },
+    {
+      id: 3,
+      name: "Kresnik",
+      type: "Mercado Negro / Contrabando",
+      motivation: "Lucro e manipulação de informações em meio ao caos",
+      description:
+        "A Kresnik opera como uma rede de contrabandistas e espiões, negociando armas, remédios e informações confidenciais. Eles não são aliados de ninguém – só clientes e alvos. Sua base nunca é conhecida e suas operações são sempre secretas.",
+      activities: [
+        "Venda de informações privilegiadas",
+        "Comércio de itens ilegais e raros",
+        "Mediação de negócios obscuros",
+      ],
+      motto: "Nem amigos, nem inimigos. Só clientes.",
+      color: "bg-purple-600",
+      icon: "💰",
+    },
+    {
+      id: 4,
+      name: "Irmandade Zoya",
+      type: "Comunidade Protetora / Socorristas",
+      motivation: "Salvar e proteger o que restou da humanidade",
+      description:
+        "A Irmandade Zoya é composta por médicos, agricultores, civis e antigos voluntários de ajuda humanitária. Eles se recusam a aceitar o caos e tentam reconstruir pequenas comunidades pacíficas, oferecendo abrigo e auxílio.",
+      activities: ["Tratamento médico gratuito", "Proteção de civis e reféns", "Negociações diplomáticas"],
+      motto: "Na queda do mundo, nasce a última esperança.",
+      color: "bg-blue-600",
+      icon: "🏥",
+    },
+    {
+      id: 5,
+      name: "Cinzas de Volkov",
+      type: "Grupo Revolucionário / Anarquistas",
+      motivation: "Impedir qualquer tentativa de recriação de governos ou autoritarismo",
+      description:
+        "As Cinzas de Volkov são ex-revolucionários que acreditam que todo tipo de liderança centralizada é uma ameaça à liberdade. Atacam facções militares, sabotam sistemas de controle e se declaram inimigos de toda e qualquer tirania.",
+      activities: [
+        "Sabotagem de bases e instalações",
+        "Ataques a grupos considerados 'opressores'",
+        "Propaganda e recrutamento ideológico",
+      ],
+      motto: "Nenhuma bandeira sobre nós.",
+      color: "bg-orange-600",
+      icon: "🔥",
+    },
+  ]
+
+  const donationPackages = [
+    {
+      id: 1,
+      name: "Survivor",
+      price: 10,
+      color: "bg-green-600",
+      benefits: ["Roupa inicial", "Comida inicial", "Prioridade na fila"],
+    },
+    {
+      id: 2,
+      name: "Veteran",
+      price: 25,
+      color: "bg-blue-600",
+      benefits: [
+        "Roupa inicial",
+        "Comida inicial",
+        "Prioridade na fila",
+        "VIP no Discord",
+        "Machado",
+        "Customização do personagem",
+      ],
+      popular: true,
+    },
+    {
+      id: 3,
+      name: "Elite",
+      price: 50,
+      color: "bg-purple-600",
+      benefits: [
+        "Todos os benefícios anteriores",
+        "Kit premium completo",
+        "Slot garantido",
+        "Acesso total VIP",
+        "Veículo exclusivo",
+        "Suporte prioritário",
+        "🏛️ Apoio para criação de nova facção",
+        "📋 Consultoria para lore e estrutura",
+      ],
+      factionSupport: true,
+    },
+    {
+      id: 4,
+      name: "Legend",
+      price: 100,
+      color: "bg-yellow-600",
+      benefits: [
+        "Todos os benefícios anteriores",
+        "Base pré-construída",
+        "Armas exclusivas",
+        "Acesso a eventos especiais",
+        "Influência na história do servidor",
+        "👑 Liderança garantida de facção",
+        "🎯 Território inicial definido",
+        "⚔️ Equipamentos únicos da facção",
+      ],
+      factionSupport: true,
+      premium: true,
+    },
+  ]
+
+  const staff = [
+    {
+      id: 1,
+      name: "Yuri",
+      role: "Developer & Manager",
+      experience: "5 anos DayZ RP",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/YURI.jpg-Ecb6c2XpbfooE8gk7G3uReFgj3oniQ.jpeg",
+      discord: "Yuri#1337",
+      specialty: "Desenvolvimento e Gestão",
+    },
+    {
+      id: 2,
+      name: "Fernando",
+      role: "Developer & Mod Manager",
+      experience: "4 anos DayZ RP",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/FERNANDO.jpg-3t796fjm9FxOKX6gj1UoG9oHZ9ggO2.jpeg",
+      discord: "Fernando#0420",
+      specialty: "Desenvolvimento, Gestão e Mods",
+    },
+    {
+      id: 3,
+      name: "Felipe",
+      role: "Event & RP Manager",
+      experience: "3 anos DayZ RP",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Felipe.jpg-7aD81t7dORpgwZasPZT8bZeLPiJHp0.jpeg",
+      discord: "Felipe#6969",
+      specialty: "Eventos e Roleplay",
+    },
+    {
+      id: 4,
+      name: "Wendel",
+      role: "Mod & Discord Manager",
+      experience: "3 anos DayZ RP",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WENDEL.jpg-iSoMo3XXTpvE6Zj1vVYqj6CzRbVPBt.jpeg",
+      discord: "Wendel#7777",
+      specialty: "Mods e Discord",
+    },
+  ]
+
+  const testimonials = [
+    {
+      name: "TesteBeta01",
+      rating: 5,
+      comment: "Participei dos testes beta e posso dizer: este servidor promete revolucionar o DayZ RP brasileiro!",
+      avatar: "/placeholder.svg?height=64&width=64&text=Beta+1",
+      playtime: "Tester Beta",
+    },
+    {
+      name: "RPVeteran",
+      rating: 5,
+      comment: "Finalmente um servidor brasileiro com foco real em roleplay hardcore. Mal posso esperar o lançamento!",
+      avatar: "/placeholder.svg?height=64&width=64&text=Beta+2",
+      playtime: "Tester Beta",
+    },
+    {
+      name: "SurvivorBR",
+      rating: 5,
+      comment: "A equipe é super dedicada e as regras são bem pensadas. Vai ser épico desde o primeiro dia!",
+      avatar: "/placeholder.svg?height=64&width=64&text=Beta+3",
+      playtime: "Tester Beta",
+    },
+  ]
+
+  const serverStats = [
+    { label: "Whitelist Ativa", value: "SIM", max: 60, icon: Users },
+    { label: "Primeira Sessão", value: "EM BREVE", icon: Activity },
+    { label: "Slots Disponíveis", value: "60", icon: Zap },
+    { label: "Status", value: "PREPARANDO", icon: Server },
+  ]
+
+  const rules = [
+    {
+      category: "Regras Gerais",
+      items: [
+        "Respeite TODOS os jogadores, staff e comunidade",
+        "Proibido racismo, xenofobia, homofobia ou preconceito",
+        "Sem uso de bugs, glitch, hack ou programas externos",
+        "Proibido metagaming (usar informações de fora do jogo)",
+        "Sem powergaming (forçar situações impossíveis)",
+        "Proibido combat log ou ghosting durante combate",
+      ],
+    },
+    {
+      category: "Valor à Vida",
+      items: [
+        "Sua vida é o bem mais importante no RP",
+        "Quando rendido, priorize preservar sua vida",
+        "Não reaja de forma irreal ou suicida",
+        "Toda abordagem deve ser feita com comunicação via voz",
+        "Use frases coerentes: 'Parado! Baixe a arma!'",
+        "Dar tiro sem ameaça prévia é RDM",
+      ],
+    },
+    {
+      category: "Combate e PvP",
+      items: [
+        "Proibido RDM (matar sem contexto ou motivo)",
+        "Proibido VDM (atropelar sem situação de RP)",
+        "Ao morrer, perde memória dos últimos 30 minutos",
+        "Não retorne ao local da morte nesse período",
+        "Conflitos devem ter motivo claro e histórico",
+        "Diplomacia e guerras devem ser justificadas",
+      ],
+    },
+    {
+      category: "Bases e Facções",
+      items: [
+        "Bases devem ser realistas e coerentes",
+        "Proibido bases inatingíveis ou com bugs",
+        "Raid permitido dentro do RP realista",
+        "Facções devem ser aprovadas pela staff",
+        "Facções precisam de objetivo e lore definida",
+        "Território deve ter justificativa histórica",
+      ],
+    },
+    {
+      category: "Whitelist e RP",
+      items: [
+        "Nome e sobrenome realistas obrigatórios",
+        "Defina idade, nacionalidade e história",
+        "Explique motivação para estar em Chernarus",
+        "Proibido super-heróis ou personagens invencíveis",
+        "Sem referências a celebridades reais",
+        "Uso de microfone é obrigatório",
+      ],
+    },
+    {
+      category: "Penalidades",
+      items: [
+        "RDM/VDM: Ban de 3 a 7 dias ou permanente",
+        "Metagaming/Powergaming: Ban de 3 dias",
+        "Desrespeito grave: Ban imediato",
+        "Hack ou trapaça: Ban permanente",
+        "Reincidência: Penalidades mais severas",
+        "Appeals devem ser feitos no Discord",
+      ],
+    },
+  ]
+
+  useEffect(() => {
+    setIsVisible(true)
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)
+    }, 5000)
+
+    // Update current time
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    // Simulate server status updates
+    const statusInterval = setInterval(() => {
+      setPlayerCount((prev) => Math.max(30, Math.min(60, prev + Math.floor(Math.random() * 6) - 3)))
+    }, 30000)
+
+    return () => {
+      clearInterval(interval)
+      clearInterval(timeInterval)
+      clearInterval(statusInterval)
+    }
+  }, [])
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)
+  }
+
+  // Form validation functions
+  const validateWhitelistForm = (): boolean => {
+    return !!(
+      whitelistForm.steamId.trim() &&
+      whitelistForm.discordTag.trim() &&
+      whitelistForm.age.trim() &&
+      whitelistForm.experience.trim() &&
+      whitelistForm.character.trim() &&
+      whitelistForm.backstory.trim() &&
+      whitelistForm.rules
+    )
+  }
+
+  const validateContactForm = (): boolean => {
+    return !!(
+      contactForm.name.trim() &&
+      contactForm.email.trim() &&
+      contactForm.subject.trim() &&
+      contactForm.message.trim()
+    )
+  }
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Form submission handlers
+  const handleWhitelistSubmit = () => {
+    window.open(
+      "https://docs.google.com/forms/d/e/1FAIpQLSfeU7p94ob7-heapBu2MY2vfvz-b-6mAgnnZZhZSRMzeFKNNQ/viewform?usp=header",
+      "_blank",
+    )
+  }
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateContactForm() || !validateEmail(contactForm.email)) {
+      setContactStatus("error")
+      return
+    }
+
+    setIsContactLoading(true)
+    setContactStatus("idle")
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      setContactStatus("success")
+
+      setTimeout(() => {
+        setContactForm({ name: "", email: "", subject: "", message: "" })
+        setContactStatus("idle")
+      }, 3000)
+    } catch (error) {
+      setContactStatus("error")
+    } finally {
+      setIsContactLoading(false)
+    }
+  }
+
+  const handleDonationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!donationForm.package || !donationForm.steamId || !validateEmail(donationForm.email)) {
+      setDonationStatus("error")
+      return
+    }
+
+    setIsDonationLoading(true)
+    setDonationStatus("idle")
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      setDonationStatus("success")
+
+      setTimeout(() => {
+        setDonationForm({
+          amount: 10,
+          package: "",
+          steamId: "",
+          email: "",
+          message: "",
+        })
+        setDonationStatus("idle")
+      }, 3000)
+    } catch (error) {
+      setDonationStatus("error")
+    } finally {
+      setIsDonationLoading(false)
+    }
+  }
+
+  const getStatusColor = () => {
+    switch (serverStatus) {
+      case "online":
+        return "text-green-400"
+      case "offline":
+        return "text-red-400"
+      case "restarting":
+        return "text-yellow-400"
+      default:
+        return "text-gray-400"
+    }
+  }
+
+  const getStatusText = () => {
+    switch (serverStatus) {
+      case "online":
+        return "ONLINE"
+      case "offline":
+        return "PREPARANDO"
+      case "restarting":
+        return "EM BREVE"
+      default:
+        return "PREPARANDO"
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Tactical Navigation HUD */}
+      <nav className="fixed top-0 w-full bg-black/90 backdrop-blur-sm z-50 border-b-2 border-green-600/50">
+        {/* Top HUD Bar */}
+        <div className="bg-gradient-to-r from-green-900/30 via-green-600/20 to-green-900/30 px-4 py-1">
+          <div className="max-w-7xl mx-auto flex justify-between items-center text-xs font-mono">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <Signal className="h-3 w-3 text-green-400" />
+                <span className="text-green-400">SINAL: EXCELENTE</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Wifi className="h-3 w-3 text-green-400" />
+                <span className="text-green-400">REDE: CONECTADO</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <Battery className="h-3 w-3 text-green-400" />
+                <span className="text-green-400">CARREGAMENTO: 100% </span>
+              </div>
+              <div className="text-green-400">
+                {currentTime.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Navigation */}
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo Section */}
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-green-500 tracking-wider font-sans">Brasil SA RP</span>
+              </div>
+            </div>
+
+            {/* Desktop Menu */}
+            <div className="hidden md:flex space-x-1">
+              {[
+                { href: "#inicio", label: "INICIO", icon: Target },
+                { href: "#servidor", label: "SERVIDOR", icon: Server },
+                { href: "#faccoes", label: "FACÇÕES", icon: Users },
+                { href: "#regras", label: "REGRAS", icon: FileText },
+                { href: "#staff", label: "STAFF", icon: Shield },
+                { href: "#doacoes", label: "DOAÇÕES", icon: Gift },
+                { href: "#contato", label: "CONTATO", icon: Radio },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-1 px-3 py-2 text-xs font-mono font-bold text-gray-300 hover:text-green-400 hover:bg-green-600/10 transition-all duration-200 border border-transparent hover:border-green-600/30"
+                >
+                  <item.icon className="h-3 w-3" />
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </div>
+
+            {/* Status Panel */}
+            <div className="hidden md:flex items-center space-x-4">
+              {/* Server Status HUD */}
+              <div className="bg-gray-800/80 border border-green-600/30 px-4 py-2 rounded font-mono text-xs">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${getStatusColor().replace("text-", "bg-")} animate-pulse`}
+                  ></div>
+                  <span className={`font-bold ${getStatusColor()}`}>{getStatusText()}</span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-green-400">{playerCount}/60</span>
+                </div>
+                <div className="text-gray-500 text-[10px] mt-1">SERVIDOR CHERNARUS</div>
+              </div>
+
+              {/* Action Button */}
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-black font-bold font-mono text-xs px-6 py-3 border-2 border-green-400 hover:border-green-300 transition-all duration-200"
+                onClick={handleWhitelistSubmit}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                WHITLIST
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 border border-green-600/50 hover:bg-green-600/10 transition-colors"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-black/95 border-t border-green-600/30">
+            <div className="px-4 py-4 space-y-2">
+              {[
+                { href: "#inicio", label: "INICIO", icon: Target },
+                { href: "#servidor", label: "SERVIDOR", icon: Server },
+                { href: "#faccoes", label: "FACÇÕES", icon: Users },
+                { href: "#regras", label: "REGRAS", icon: FileText },
+                { href: "#staff", label: "STAFF", icon: Shield },
+                { href: "#doacoes", label: "DOAÇÕES", icon: Gift },
+                { href: "#contato", label: "CONTATO", icon: Radio },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm font-mono text-gray-300 hover:text-green-400 hover:bg-green-600/10 border border-transparent hover:border-green-600/30 transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </a>
+              ))}
+
+              <div className="mt-4 pt-4 border-t border-green-600/30">
+                <div className="bg-gray-800/80 border border-green-600/30 px-3 py-2 rounded font-mono text-xs mb-4">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${getStatusColor().replace("text-", "bg-")} animate-pulse`}
+                    ></div>
+                    <span className={`font-bold ${getStatusColor()}`}>{getStatusText()}</span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-green-400">{playerCount}/60</span>
+                  </div>
+                </div>
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-black font-bold font-mono">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  DEPLOY
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tactical Scanlines Effect */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-600/5 to-transparent animate-pulse"></div>
+        </div>
+      </nav>
+
+      {/* Video Introduction Section */}
+      {showVideo && (
+        <section className="relative h-screen flex items-center justify-center overflow-hidden">
+          <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted={isVideoMuted} playsInline>
+            <source src="/videos/server-intro.mp4" type="video/mp4" />
+          </video>
+
+          {/* Video Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/70" />
+
+          {/* Video Controls */}
+          <div className="absolute top-24 right-6 flex flex-col space-y-2 z-20">
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-black/50 border-green-600 text-green-500 hover:bg-green-600 hover:text-black"
+              onClick={() => setIsVideoMuted(!isVideoMuted)}
+            >
+              {isVideoMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-black/50 border-red-600 text-red-500 hover:bg-red-600 hover:text-black"
+              onClick={() => setShowVideo(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Video Content */}
+          <div className="relative z-10 text-center px-4 max-w-5xl">
+            <div className="mb-8">
+              <div className="flex items-center justify-center mb-6">
+                <img src="/images/logo-site.webp" alt="Brasil SA RP Logo" className="h-20 w-20 mr-6" />
+                <h1 className="text-7xl md:text-9xl font-bold text-white font-mono tracking-wider">
+                  BRASIL<span className="text-green-500">SA RP</span>
+                </h1>
+              </div>
+
+              <div className="bg-black/60 border-2 border-green-600/50 p-8 rounded-lg backdrop-blur-sm">
+                <h2 className="text-2xl md:text-3xl font-bold text-green-400 mb-6 font-mono">
+                  OPERAÇÃO: SOBREVIVÊNCIA
+                </h2>
+                <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed">
+                  Bem-vindo ao mais intenso servidor de DayZ RP do Brasil.
+                  <br />
+                  <span className="text-green-500 font-semibold">Primeira sessão em preparação.</span>
+                  <br />
+                  Você está pronto para sobreviver?
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button
+                    size="lg"
+                    className="bg-green-600 hover:bg-green-700 text-black font-bold px-8 py-4 text-lg font-mono border-2 border-green-400"
+                    onClick={() => setShowVideo(false)}
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    INICIAR MISSÃO
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-green-600 text-green-500 hover:bg-green-600 hover:text-black px-8 py-4 text-lg bg-transparent font-mono"
+                    onClick={handleWhitelistSubmit}
+                  >
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    APLICAR WHITELIST
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skip Button */}
+          <div className="absolute bottom-6 right-6 z-20">
+            <Button
+              variant="outline"
+              className="bg-black/50 border-gray-600 text-gray-400 hover:bg-gray-600 hover:text-black font-mono text-sm"
+              onClick={() => setShowVideo(false)}
+            >
+              PULAR INTRO
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Hero Section */}
+      <section id="inicio" className="relative h-screen flex items-center justify-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/images/fundo-1.jpg')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/80" />
+
+        <div
+          className={`relative z-10 text-center px-4 max-w-4xl transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+        >
+          <div className="flex items-center justify-center mb-6">
+            <img src="/images/logo-site.webp" alt="Brasil SA RP Logo" className="h-16 w-16 mr-4" />
+            <h1 className="text-5xl md:text-7xl font-bold text-white">
+              BRASIL<span className="text-green-500">SA RP</span>
+            </h1>
+          </div>
+
+          <div className="space-y-6 mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-green-500 mb-4">Bem-vindo ao Brasil SA RP</h2>
+
+            <div className="max-w-4xl mx-auto space-y-4 text-base md:text-lg text-gray-300 leading-relaxed">
+              <p>
+                Em um mundo devastado pela calamidade, sobreviver não é mais uma opção — é uma{" "}
+                <span className="text-green-500 font-semibold">necessidade</span>.
+              </p>
+
+              <p>
+                O Brasil SA RP está <span className="text-green-500 font-semibold">chegando</span> para revolucionar o
+                cenário de DayZ RP no Brasil. Prepare-se para uma experiência onde cada passo, cada escolha e cada
+                interação podem significar <span className="text-red-400 font-semibold">vida ou morte</span>.
+              </p>
+
+              <p>
+                Seja como um <span className="text-blue-400">sobrevivente solitário</span>, um{" "}
+                <span className="text-purple-400">membro de uma facção organizada</span> ou um{" "}
+                <span className="text-yellow-400">fora-da-lei</span> tentando impor seu próprio código, aqui a história
+                será escrita pelos jogadores.
+              </p>
+
+              <p>
+                A confiança será <span className="text-gray-400">rara</span>, a ameaça será{" "}
+                <span className="text-red-500 font-semibold">constante</span> e o tempo nunca estará a seu favor.
+              </p>
+
+              <p className="text-xl md:text-2xl font-bold text-white">
+                Prepare-se para uma experiência <span className="text-green-500">hardcore</span> de sobrevivência e
+                roleplay no cenário brutal de Chernarus.
+              </p>
+
+              <p className="text-2xl md:text-3xl font-bold text-green-500 italic">
+                A primeira sessão está chegando. Seja um dos pioneiros desta nova era.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-black font-bold px-8 py-4 text-lg"
+              onClick={handleWhitelistSubmit}
+            >
+              <UserPlus className="mr-2 h-5 w-5" />
+              APLICAR WHITELIST
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-green-600 text-green-500 hover:bg-green-600 hover:text-black px-8 py-4 text-lg bg-transparent"
+              onClick={() => window.open("https://discord.gg/brasilsarp", "_blank")}
+            >
+              <MessageCircle className="mr-2 h-5 w-5" />
+              DISCORD
+            </Button>
+          </div>
+
+          {/* Server Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-3xl mx-auto">
+            {serverStats.map((stat, index) => (
+              <div key={index} className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-green-600/20">
+                <div className="flex items-center justify-center mb-2">
+                  <stat.icon className="h-6 w-6 text-green-500" />
+                </div>
+                <div className="text-2xl font-bold text-green-500">{stat.value}</div>
+                <div className="text-xs text-gray-400">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="relative py-20 px-4 bg-gradient-to-b from-gray-800 to-gray-900 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage: "url('/images/fundo-2.jpg')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70" />
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <Shield className="h-8 w-8 text-green-500" />
+                <h2 className="text-4xl font-bold">Nova Era da Sobrevivência</h2>
+              </div>
+              <p className="text-lg text-gray-300 leading-relaxed">
+                O Brasil SA RP nasce como uma nova proposta de servidor DayZ roleplay hardcore. Desenvolvido por uma
+                equipe experiente, oferecemos uma experiência imersiva desde o primeiro dia.
+              </p>
+              <p className="text-lg text-gray-300 leading-relaxed">
+                Como um servidor em sua primeira sessão, cada jogador terá a oportunidade única de moldar a história
+                desde o início. Seja parte dos fundadores desta nova comunidade de sobreviventes.
+              </p>
+
+              <div className="grid grid-cols-2 gap-6 mt-8">
+                <div className="bg-green-600/10 p-6 rounded-lg border border-green-600/20">
+                  <Radio className="h-8 w-8 text-green-500 mb-3" />
+                  <h3 className="font-bold text-green-500 mb-2">RP Imersivo</h3>
+                  <p className="text-sm text-gray-400">Roleplay 24/7 com histórias conectadas</p>
+                </div>
+                <div className="bg-green-600/10 p-6 rounded-lg border border-green-600/20">
+                  <Target className="h-8 w-8 text-green-500 mb-3" />
+                  <h3 className="font-bold text-green-500 mb-2">PvP Balanceado</h3>
+                  <p className="text-sm text-gray-400">Combate justo com regras claras</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <img src="/images/dayz-survivors.jpg" alt="DayZ Survivors" className="rounded-lg shadow-2xl w-full" />
+              <div className="absolute -bottom-6 -right-6 bg-green-600 text-black p-4 font-bold rounded-md">
+                <div className="text-2xl">{""}</div>
+                <div className="text-sm">{"Temporada #1"}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section Divider */}
+      <div className="relative h-32 bg-gradient-to-r from-green-900/20 via-green-600/30 to-green-900/20">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-600/20 to-transparent"></div>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-24 h-1 bg-green-600 rounded-full"></div>
+          <div className="mx-4 text-green-500">
+            <Server className="h-8 w-8" />
+          </div>
+          <div className="w-24 h-1 bg-green-600 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Server Features Section */}
+      <section id="servidor" className="py-20 px-4 bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Server className="h-8 w-8 text-green-500" />
+              <h2 className="text-4xl font-bold">Características do Servidor</h2>
+            </div>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Experiência única com mods cuidadosamente selecionados e eventos regulares
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {serverFeatures.map((feature) => (
+              <Card
+                key={feature.id}
+                className="bg-gray-800 border-gray-700 hover:border-green-600/50 transition-all duration-300 hover:-translate-y-2"
+              >
+                <CardHeader className="text-center pb-4">
+                  <div className="text-4xl mb-4">{feature.icon}</div>
+                  <CardTitle className="text-xl text-white">{feature.name}</CardTitle>
+                  <CardDescription className="text-gray-400">{feature.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feature.details.map((detail, index) => (
+                    <div key={index} className="flex items-center text-sm text-gray-300">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      {detail}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section Divider */}
+      <div className="relative h-32 bg-gradient-to-r from-purple-900/20 via-purple-600/30 to-purple-900/20">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-600/20 to-transparent"></div>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-24 h-1 bg-purple-600 rounded-full"></div>
+          <div className="mx-4 text-purple-500">
+            <Users className="h-8 w-8" />
+          </div>
+          <div className="w-24 h-1 bg-purple-600 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Factions Section */}
+      <section id="faccoes" className="py-20 px-4 bg-gradient-to-b from-gray-800 to-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Users className="h-8 w-8 text-green-500" />
+              <h2 className="text-4xl font-bold">Facções Oficiais</h2>
+            </div>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Organizações que moldam o destino de Chernarus no apocalipse
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {factions.map((faction) => (
+              <Card
+                key={faction.id}
+                className="bg-gray-800 border-gray-700 hover:border-green-600/50 transition-all duration-300 hover:-translate-y-2"
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className={`w-12 h-12 ${faction.color} rounded-full flex items-center justify-center text-2xl`}
+                    >
+                      {faction.icon}
+                    </div>
+                    <Badge variant="outline" className="border-green-600 text-green-500 text-xs">
+                      {faction.type}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-xl text-white mb-2">{faction.name}</CardTitle>
+                  <CardDescription className="text-gray-400 text-sm leading-relaxed">
+                    {faction.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="text-green-500 font-semibold mb-2 text-sm">Motivação:</h4>
+                    <p className="text-gray-300 text-sm">{faction.motivation}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-green-500 font-semibold mb-2 text-sm">Atuação:</h4>
+                    <div className="space-y-1">
+                      {faction.activities.map((activity, index) => (
+                        <div key={index} className="flex items-start text-xs text-gray-300">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                          {activity}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-700 pt-3">
+                    <h4 className="text-green-500 font-semibold mb-2 text-sm">Lema:</h4>
+                    <p className="text-gray-300 italic text-sm font-medium">"{faction.motto}"</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-gray-400 mb-6">
+              Interessado em criar ou se juntar a uma facção? Entre em contato com nossa staff!
+            </p>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-black font-bold"
+              onClick={() => window.open("https://discord.gg/brasilsarp", "_blank")}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              DISCUTIR FACÇÕES NO DISCORD
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Section Divider */}
+      <div className="relative h-32 bg-gradient-to-r from-red-900/20 via-red-600/30 to-red-900/20">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-600/20 to-transparent"></div>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-24 h-1 bg-red-600 rounded-full"></div>
+          <div className="mx-4 text-red-500">
+            <FileText className="h-8 w-8" />
+          </div>
+          <div className="w-24 h-1 bg-red-600 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Rules Section */}
+      <section id="regras" className="py-20 px-4 bg-gradient-to-b from-gray-800 to-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <FileText className="h-8 w-8 text-green-500" />
+              <h2 className="text-4xl font-bold">Regras do Servidor</h2>
+            </div>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Regras essenciais para manter a qualidade do roleplay e diversão para todos
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {rules.map((ruleCategory, index) => (
+              <Card key={index} className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-xl text-green-500 flex items-center">
+                    <Crosshair className="mr-2 h-5 w-5" />
+                    {ruleCategory.category}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {ruleCategory.items.map((rule, ruleIndex) => (
+                    <div key={ruleIndex} className="flex items-start text-sm text-gray-300">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      {rule}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-black font-bold"
+              onClick={() => window.open("https://discord.gg/brasilsarp/rules", "_blank")}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              VER REGRAS COMPLETAS
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Section Divider */}
+      <div className="relative h-32 bg-gradient-to-r from-yellow-900/20 via-yellow-600/30 to-yellow-900/20">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-600/20 to-transparent"></div>
+        <div className="flex items-center justify-center h-full">
+          <div className="w-24 h-1 bg-yellow-600 rounded-full"></div>
+          <div className="mx-4 text-yellow-500">
+            <Gift className="h-8 w-8" />
+          </div>
+          <div className="w-24 h-1 bg-yellow-600 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Donations Section */}
+      <section id="doacoes" className="py-20 px-4 bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Gift className="h-8 w-8 text-green-500" />
+              <h2 className="text-4xl font-bold">Apoie o Servidor</h2>
+            </div>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Ajude a manter o servidor online e receba benefícios exclusivos
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {donationPackages.map((pkg) => (
+              <Card
+                key={pkg.id}
+                className={`bg-gray-800 border-gray-700 hover:border-green-600/50 transition-all duration-300 hover:-translate-y-2 relative ${
+                  pkg.popular ? "ring-2 ring-green-600" : ""
+                }`}
+              >
+                {pkg.popular && (
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-black font-bold">
+                    POPULAR
+                  </Badge>
+                )}
+                <CardHeader className="text-center">
+                  <div className={`w-16 h-16 ${pkg.color} rounded-full mx-auto mb-4 flex items-center justify-center`}>
+                    <Crown className="h-8 w-8 text-white" />
+                  </div>
+                  <CardTitle className="text-xl text-white">{pkg.name}</CardTitle>
+                  <div className="text-3xl font-bold text-green-500">R$ {pkg.price}</div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {pkg.benefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center text-sm text-gray-300">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      {benefit}
+                    </div>
+                  ))}
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-black font-bold mt-4"
+                    onClick={() => {
+                      setDonationForm((prev) => ({ ...prev, package: pkg.name, amount: pkg.price }))
+                      setActiveTab("doacoes")
+                      document.getElementById("contato")?.scrollIntoView({ behavior: "smooth" })
+                    }}
+                  >
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    ESCOLHER PACOTE
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Faction Support Info */}
+          <div className="mt-16 bg-gradient-to-r from-purple-900/20 to-yellow-900/20 rounded-lg p-8 border border-purple-600/30">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <Users className="h-8 w-8 text-purple-400" />
+                <h3 className="text-3xl font-bold text-white">Apoio para Novas Facções</h3>
+              </div>
+              <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+                Os pacotes <span className="text-purple-400 font-bold">Elite</span> e{" "}
+                <span className="text-yellow-400 font-bold">Legend</span> incluem suporte completo para criação e
+                desenvolvimento de novas facções oficiais no servidor.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="bg-purple-900/30 border-purple-600/50">
+                <CardHeader>
+                  <CardTitle className="text-purple-400 flex items-center">
+                    <Crown className="mr-2 h-6 w-6" />
+                    Pacote Elite - Apoio Facção
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <h4 className="text-white font-semibold">🏛️ Criação de Facção:</h4>
+                    <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                      <li>• Aprovação prioritária para nova facção</li>
+                      <li>• Consultoria com staff para desenvolvimento</li>
+                      <li>• Ajuda na criação de lore e objetivos</li>
+                      <li>• Design de identidade visual básica</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-white font-semibold">📋 Suporte Inicial:</h4>
+                    <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                      <li>• Até 5 membros iniciais aprovados</li>
+                      <li>• Equipamentos básicos para início</li>
+                      <li>• Orientação sobre regras de facção</li>
+                      <li>• Canal dedicado no Discord</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-yellow-900/30 border-yellow-600/50">
+                <CardHeader>
+                  <CardTitle className="text-yellow-400 flex items-center">
+                    <Crown className="mr-2 h-6 w-6" />
+                    Pacote Legend - Facção Premium
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <h4 className="text-white font-semibold">👑 Liderança Garantida:</h4>
+                    <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                      <li>• Posição de líder oficial da facção</li>
+                      <li>• Território inicial pré-definido</li>
+                      <li>• Base principal pré-construída</li>
+                      <li>• Equipamentos únicos exclusivos</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-white font-semibold">⚔️ Recursos Premium:</h4>
+                    <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                      <li>• Até 10 membros iniciais aprovados</li>
+                      <li>• Veículos exclusivos da facção</li>
+                      <li>• Eventos personalizados mensais</li>
+                      <li>• Influência direta na história do servidor</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-8 text-center">
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-green-600/30">
+                <h4 className="text-green-400 font-bold mb-3 flex items-center justify-center">
+                  <AlertCircle className="mr-2 h-5 w-5" />
+                  Processo de Criação de Facção
+                </h4>
+                <div className="grid md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="bg-green-600 text-black rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2 font-bold">
+                      1
+                    </div>
+                    <p className="text-gray-300">Adquirir pacote Elite/Legend</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-green-600 text-black rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2 font-bold">
+                      2
+                    </div>
+                    <p className="text-gray-300">Reunião com staff para planejamento</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-green-600 text-black rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2 font-bold">
+                      3
+                    </div>
+                    <p className="text-gray-300">Desenvolvimento de lore e estrutura</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-green-600 text-black rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2 font-bold">
+                      4
+                    </div>
+                    <p className="text-gray-300">Aprovação e lançamento oficial</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Staff Section */}
+      <section id="staff" className="relative py-20 px-4 bg-gradient-to-b from-gray-800 to-gray-900 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          style={{
+            backgroundImage: "url('/images/fundo-1.jpg')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/80" />
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Users className="h-8 w-8 text-green-500" />
+              <h2 className="text-4xl font-bold">Nossa Equipe</h2>
+            </div>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Administradores dedicados para garantir a melhor experiência de jogo
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {staff.map((member) => (
+              <Card
+                key={member.id}
+                className="bg-gray-800 border-gray-700 hover:border-green-600/50 transition-all duration-300 text-center overflow-hidden"
+              >
+                <div className="relative">
+                  <img
+                    src={member.image || "/placeholder.svg"}
+                    alt={member.name}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                    <Badge className="bg-green-600 text-black font-bold">{member.role}</Badge>
+                  </div>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl text-white">{member.name}</CardTitle>
+                  <CardDescription className="text-green-500 font-semibold">{member.specialty}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Experiência:</span>
+                    <span className="text-white">{member.experience}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Discord:</span>
+                    <span className="text-green-500 font-mono text-xs">{member.discord}</span>
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-black font-bold mt-4"
+                    onClick={() => window.open(`https://discord.gg/brasilsarp`, "_blank")}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    CONTATAR NO DISCORD
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery Section */}
+      <section id="galeria" className="py-20 px-4 bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Screenshots do Servidor</h2>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+          </div>
+
+          <div className="relative">
+            <div className="relative h-96 md:h-[500px] rounded-lg overflow-hidden">
+              <img
+                src={galleryImages[currentImageIndex] || "/placeholder.svg"}
+                alt={`DayZ Screenshot ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 border-green-600 text-green-500 hover:bg-green-600 hover:text-black"
+                onClick={prevImage}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 border-green-600 text-green-500 hover:bg-green-600 hover:text-black"
+                onClick={nextImage}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex justify-center mt-6 space-x-2">
+              {galleryImages.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    index === currentImageIndex ? "bg-green-600" : "bg-gray-600"
+                  }`}
+                  onClick={() => setCurrentImageIndex(index)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4 bg-gradient-to-b from-gray-800 to-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">O Que Dizem os Sobreviventes</h2>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card
+                key={index}
+                className="bg-gray-800 border-gray-700 hover:border-green-600/50 transition-all duration-300"
+              >
+                <CardHeader className="text-center">
+                  <img
+                    src={testimonial.avatar || "/placeholder.svg"}
+                    alt={testimonial.name}
+                    className="w-16 h-16 rounded-full mx-auto mb-4 object-cover border-2 border-green-600"
+                  />
+                  <CardTitle className="text-lg text-white">{testimonial.name}</CardTitle>
+                  <div className="flex justify-center space-x-1 mb-2">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-green-400 text-green-400" />
+                    ))}
+                  </div>
+                  <Badge variant="outline" className="border-green-600 text-green-500">
+                    {testimonial.playtime}
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 italic text-center">"{testimonial.comment}"</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contato" className="py-20 px-4 bg-gray-900">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Entre na Comunidade</h2>
+            <div className="w-24 h-1 bg-green-600 mx-auto mb-8"></div>
+            <p className="text-lg text-gray-400">Junte-se aos sobreviventes e comece sua jornada no apocalipse</p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700">
+              <TabsTrigger
+                value="whitelist"
+                className="data-[state=active]:bg-green-600 data-[state=active]:text-black"
+              >
+                Whitelist
+              </TabsTrigger>
+              <TabsTrigger value="contato" className="data-[state=active]:bg-green-600 data-[state=active]:text-black">
+                Contato
+              </TabsTrigger>
+              <TabsTrigger value="doacoes" className="data-[state=active]:bg-green-600 data-[state=active]:text-black">
+                Doações
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="whitelist" className="mt-8">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <UserPlus className="mr-2 h-5 w-5 text-green-500" />
+                    Aplicação para Whitelist
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Preencha o formulário oficial do Brasil SA RP para ser aprovado no servidor
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center space-y-6">
+                  <div className="bg-green-600/10 border border-green-600/30 rounded-lg p-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="bg-green-600 rounded-full p-3">
+                        <FileText className="h-8 w-8 text-black" />
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">Formulário Oficial de Whitelist</h3>
+                    <p className="text-gray-300 mb-6">
+                      Para garantir a qualidade do roleplay, utilizamos um formulário detalhado do Google Forms. Todas
+                      as aplicações são analisadas cuidadosamente pela nossa equipe.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4 mb-6 text-sm">
+                      <div className="bg-gray-700/50 rounded-lg p-4">
+                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto mb-2" />
+                        <p className="text-gray-300">Processo seguro via Google Forms</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-lg p-4">
+                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto mb-2" />
+                        <p className="text-gray-300">Análise detalhada pela staff</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-lg p-4">
+                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto mb-2" />
+                        <p className="text-gray-300">Resposta em até 48 horas</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-lg p-4">
+                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto mb-2" />
+                        <p className="text-gray-300">Suporte via Discord</p>
+                      </div>
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="bg-green-600 hover:bg-green-700 text-black font-bold px-8 py-4 text-lg w-full md:w-auto"
+                      onClick={handleWhitelistSubmit}
+                    >
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      ABRIR FORMULÁRIO DE WHITELIST
+                    </Button>
+                  </div>
+
+                  <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-blue-400" />
+                      <h4 className="text-blue-400 font-semibold">Dicas para Aprovação</h4>
+                    </div>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      <p>• Leia todas as regras antes de aplicar</p>
+                      <p>• Crie uma história de personagem detalhada e realista</p>
+                      <p>• Seja honesto sobre sua experiência com DayZ RP</p>
+                      <p>• Entre no Discord para acompanhar o status da aplicação</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button
+                      variant="outline"
+                      className="border-green-600 text-green-500 hover:bg-green-600 hover:text-black bg-transparent"
+                      onClick={() => document.getElementById("regras")?.scrollIntoView({ behavior: "smooth" })}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      LER REGRAS PRIMEIRO
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-black bg-transparent"
+                      onClick={() => window.open("https://discord.gg/brasilsarp", "_blank")}
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      ENTRAR NO DISCORD
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contato" className="mt-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <Globe className="mr-2 h-5 w-5 text-green-500" />
+                      Informações do Servidor
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="flex items-start space-x-3">
+                        <Server className="h-5 w-5 text-green-500 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-white">IP do Servidor</h3>
+                          <p className="text-gray-400 font-mono">brasilsa.dayz.com:2302</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Users className="h-5 w-5 text-green-500 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-white">Slots</h3>
+                          <p className="text-gray-400">60 jogadores máximo</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Clock className="h-5 w-5 text-green-500 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-white">Restarts</h3>
+                          <p className="text-gray-400">A cada 6 horas (00:00, 06:00, 12:00, 18:00)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Map className="h-5 w-5 text-green-500 mt-1" />
+                        <div>
+                          <h3 className="font-semibold text-white">Mapa</h3>
+                          <p className="text-gray-400">Chernarus (Modificado)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator className="bg-gray-600" />
+
+                    <div className="space-y-3">
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => window.open("https://discord.gg/brasilsarp", "_blank")}
+                      >
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Entrar no Discord
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-green-600 text-green-500 hover:bg-green-600 hover:text-black bg-transparent"
+                        onClick={() => window.open("steam://connect/brasilsa.dayz.com:2302", "_blank")}
+                      >
+                        <Gamepad2 className="mr-2 h-5 w-5" />
+                        Conectar via Steam
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white">Envie uma Mensagem</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleContactSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-name" className="text-white">
+                          Nome *
+                        </Label>
+                        <Input
+                          id="contact-name"
+                          placeholder="Seu nome ou nick"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          value={contactForm.name}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, name: e.target.value }))}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-email" className="text-white">
+                          Email *
+                        </Label>
+                        <Input
+                          id="contact-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-subject" className="text-white">
+                          Assunto *
+                        </Label>
+                        <select
+                          id="contact-subject"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                          value={contactForm.subject}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, subject: e.target.value }))}
+                          required
+                        >
+                          <option value="">Selecione o assunto</option>
+                          <option value="whitelist">Dúvidas sobre Whitelist</option>
+                          <option value="regras">Esclarecimento de Regras</option>
+                          <option value="bug">Reportar Bug</option>
+                          <option value="sugestao">Sugestão</option>
+                          <option value="denuncia">Denúncia</option>
+                          <option value="outro">Outro</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-message" className="text-white">
+                          Mensagem *
+                        </Label>
+                        <Textarea
+                          id="contact-message"
+                          placeholder="Descreva sua mensagem detalhadamente"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          rows={4}
+                          value={contactForm.message}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
+                          required
+                        />
+                      </div>
+
+                      {contactStatus === "success" && (
+                        <Alert className="border-green-600 bg-green-600/10">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <AlertDescription className="text-green-500">
+                            Mensagem enviada com sucesso! Responderemos em breve.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {contactStatus === "error" && (
+                        <Alert className="border-red-600 bg-red-600/10">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <AlertDescription className="text-red-500">
+                            Erro ao enviar mensagem. Verifique os dados e tente novamente.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <Button
+                        type="submit"
+                        className="w-full bg-green-600 hover:bg-green-700 text-black font-bold"
+                        disabled={isContactLoading}
+                      >
+                        {isContactLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ENVIANDO...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="mr-2 h-4 w-4" />
+                            ENVIAR MENSAGEM
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="doacoes" className="mt-8">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Gift className="mr-2 h-5 w-5 text-green-500" />
+                    Fazer Doação
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Escolha um pacote e ajude a manter o servidor funcionando
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleDonationSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="donation-package" className="text-white">
+                        Pacote de Doação *
+                      </Label>
+                      <select
+                        id="donation-package"
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                        value={donationForm.package}
+                        onChange={(e) => {
+                          const selectedPkg = donationPackages.find((pkg) => pkg.name === e.target.value)
+                          setDonationForm((prev) => ({
+                            ...prev,
+                            package: e.target.value,
+                            amount: selectedPkg?.price || 10,
+                          }))
+                        }}
+                        required
+                      >
+                        <option value="">Selecione um pacote</option>
+                        {donationPackages.map((pkg) => (
+                          <option key={pkg.id} value={pkg.name}>
+                            {pkg.name} - R$ {pkg.price}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="donation-steam" className="text-white">
+                          Steam ID *
+                        </Label>
+                        <Input
+                          id="donation-steam"
+                          placeholder="76561198000000000"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          value={donationForm.steamId}
+                          onChange={(e) => setDonationForm((prev) => ({ ...prev, steamId: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="donation-email" className="text-white">
+                          Email *
+                        </Label>
+                        <Input
+                          id="donation-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          value={donationForm.email}
+                          onChange={(e) => setDonationForm((prev) => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="donation-amount" className="text-white">
+                        Valor da Doação
+                      </Label>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white">R$</span>
+                        <Input
+                          id="donation-amount"
+                          type="number"
+                          min="10"
+                          className="bg-gray-700 border-gray-600 text-white"
+                          value={donationForm.amount}
+                          onChange={(e) => setDonationForm((prev) => ({ ...prev, amount: Number(e.target.value) }))}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="donation-message" className="text-white">
+                        Mensagem (Opcional)
+                      </Label>
+                      <Textarea
+                        id="donation-message"
+                        placeholder="Deixe uma mensagem para a equipe"
+                        className="bg-gray-700 border-gray-600 text-white"
+                        rows={3}
+                        value={donationForm.message}
+                        onChange={(e) => setDonationForm((prev) => ({ ...prev, message: e.target.value }))}
+                      />
+                    </div>
+
+                    {donationStatus === "success" && (
+                      <Alert className="border-green-600 bg-green-600/10">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <AlertDescription className="text-green-500">
+                          Doação processada com sucesso! Você receberá os benefícios em até 24h.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {donationStatus === "error" && (
+                      <Alert className="border-red-600 bg-red-600/10">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                        <AlertDescription className="text-red-500">
+                          Erro ao processar doação. Verifique os dados e tente novamente.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-green-600 hover:bg-green-700 text-black font-bold py-3"
+                      disabled={isDonationLoading}
+                    >
+                      {isDonationLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          PROCESSANDO...
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="mr-2 h-5 w-5" />
+                          FAZER DOAÇÃO - R$ {donationForm.amount}
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-black border-t border-green-600/20 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <img src="/images/logo-site.webp" alt="Brasil SA RP Logo" className="h-8 w-8" />
+                <span className="text-xl font-bold text-green-500">BRASIL SA RP</span>
+              </div>
+              <p className="text-gray-400 mb-4">
+                O servidor de DayZ roleplay mais imersivo do Brasil. Sobreviva, construa sua história e domine o
+                apocalipse.
+              </p>
+              <div className="flex space-x-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-green-600 text-green-500 hover:bg-green-600 hover:text-black bg-transparent"
+                  onClick={() => window.open("https://discord.gg/brasilsarp", "_blank")}
+                >
+                  <MessageCircle className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-green-600 text-green-500 hover:bg-green-600 hover:text-black bg-transparent"
+                  onClick={() => window.open("https://youtube.com/@brasilsarp", "_blank")}
+                >
+                  <Play className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-white">Servidor</h4>
+              <div className="space-y-2 text-gray-400">
+                <p>IP: brasilsa.dayz.com:2302</p>
+                <p>Slots: 60 jogadores</p>
+                <p>Mapa: Chernarus</p>
+                <p>Status: Primeira Sessão</p>
+                <p>Whitelist: Obrigatória</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-white">Links Úteis</h4>
+              <div className="space-y-2 text-gray-400">
+                <a href="#regras" className="block hover:text-green-500 transition-colors">
+                  Regras Completas
+                </a>
+                <a href="#faccoes" className="block hover:text-green-500 transition-colors">
+                  Facções Oficiais
+                </a>
+                <a href="#staff" className="block hover:text-green-500 transition-colors">
+                  Equipe Staff
+                </a>
+                <a href="#doacoes" className="block hover:text-green-500 transition-colors">
+                  Pacotes de Doação
+                </a>
+                <a
+                  href="https://discord.gg/brasilsarp/guides"
+                  className="block hover:text-green-500 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Guias para Iniciantes
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-white">Status do Servidor</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Status:</span>
+                  <span className={`font-bold ${getStatusColor()}`}>{getStatusText()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Players:</span>
+                  <span className="text-green-500 font-bold">{playerCount}/60</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Uptime:</span>
+                  <span className="text-green-500 font-bold">99.8%</span>
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-black font-bold"
+                  onClick={() => window.open("steam://connect/brasilsa.dayz.com:2302", "_blank")}
+                >
+                  <Gamepad2 className="mr-2 h-4 w-4" />
+                  CONECTAR
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
+            <p>&copy; 2025 BRASIL SA RP - Todos os direitos reservados</p>
+            <p className="mt-2 text-sm">
+              Servidor não oficial de DayZ. DayZ é marca registrada da Bohemia Interactive.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Discord Float Button */}
+      <a
+        href="https://discord.gg/brasilsarp"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 z-50 animate-pulse"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </a>
+    </div>
+  )
+}
